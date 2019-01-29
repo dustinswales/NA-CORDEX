@@ -9,13 +9,14 @@
 ; persistenceThresh   int     [1]     Persistence threshold (hours)
 ; ivtThresh           float   [1]     Strength threshold (percentile)
 ; dirOUT              string  [1]     Output directory location.
+; dirIN               string  [1]     Input directory
 ; future              int     [1]     Set to true(1) if compositing
 ;                                     over future epoch.
 ;
 ; Output is written to netCDF and stored in dirOUT.
 ;
 ; ######################################################################### 
-pro compositeEvents,dirOUT,modelID,ivtThresh,persistenceThresh,future
+pro compositeEvents,dirIN,dirOUT,modelID,ivtThresh,persistenceThresh,future
 ; Output directory
 ; dirOUT = '/data/dswales/NA-CORDEX/ARdet/'
 ; IVT threshold (standardized)
@@ -39,7 +40,7 @@ lingerTime = 12
 fprefix = 'events.'
 if (future) then fprefix = 'events.future.'
 fileIN = fprefix+res+'km.'+string(ivtThresh,format='(f5.2)')+'ptile.'+string(persistenceThresh,format='(i2.2)')+'hrs.'+modelID+'.nc'
-fileID = ncdf_open('data/events/'+fileIN)
+fileID = ncdf_open(dirIN+fileIN)
 ncdf_varget,fileID,ncdf_varid(fileID,'year_start'),yearS
 ncdf_varget,fileID,ncdf_varid(fileID,'year_end'),yearF
 ncdf_varget,fileID,ncdf_varid(fileID,'month_start'),monthS
