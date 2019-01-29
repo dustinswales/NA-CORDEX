@@ -10,7 +10,6 @@ dirIN  = '/data/dswales/NA-CORDEX/ARdet/events/'
 
 ; RCMs
 models = ['erain','mpi','gfdl','hadgem']
-models = ['gfdl','hadgem']
 nmods  = n_elements(models)
 
 ; IVT threshold (percentile)

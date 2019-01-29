@@ -97,7 +97,7 @@ for ij=0,nEvents-1 do begin
       ; Read in fields
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTU'),ivtU,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtV,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
-      ncdf_varget,fileID,ncdf_varid(fileID,'Z500'),z500,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0k,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),var_temp2,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       nt   = n_elements(ivtU(0,0,*))
       rainnc = fltarr(nlon,nlat,nt)
@@ -139,7 +139,7 @@ for ij=0,nEvents-1 do begin
       nt0 = n_elements(day)-t0
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTU'),ivtUa,offset=[0,0,t0],count=[nlon,nlat,nt0]
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtVa,offset=[0,0,t0],count=[nlon,nlat,nt0]
-      ncdf_varget,fileID,ncdf_varid(fileID,'Z500'),z500a,offset=[0,0,t0],count=[nlon,nlat,nt0]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0ka,offset=[0,0,t0],count=[nlon,nlat,nt0]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),rainnca,offset=[0,0,t0],count=[nlon,nlat,nt0]
       nt   = n_elements(ivtUa(0,0,*))
       var_temp2a = fltarr(nlon,nlat,nt)
@@ -165,7 +165,7 @@ for ij=0,nEvents-1 do begin
       nt1 = event_length(ij)-nt0
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTU'),ivtUb,count=[nlon,nlat,nt1]
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtVb,count=[nlon,nlat,nt1]
-      ncdf_varget,fileID,ncdf_varid(fileID,'Z500'),z500b,count=[nlon,nlat,nt1]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0kb,count=[nlon,nlat,nt1]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),rainncb,count=[nlon,nlat,nt1]
       nt   = n_elements(ivtUb(0,0,*))
       var_temp2b = fltarr(nlon,nlat,nt)
@@ -182,7 +182,7 @@ for ij=0,nEvents-1 do begin
       ; Combine
       ivtU = [[[ivtUa]],[[ivtUb]]]
       ivtV = [[[ivtVa]],[[ivtVb]]]
-      z500 = [[[z500a]],[[z500b]]]
+      z0k = [[[z0ka]],[[z0kb]]]
       rainnc = [[[var_temp2A]],[[var_temp2B]]]
       yy   = [yya,yyb]
       mm   = [mma,mmb]
@@ -200,6 +200,7 @@ for ij=0,nEvents-1 do begin
       event_precip = rainnc
       event_ivtU   = ivtU
       event_ivtV   = ivtV
+      event_z0k    = z0k
    endif
    if (not init) then begin
       event_hour   = [event_hour, hh]
@@ -209,6 +210,7 @@ for ij=0,nEvents-1 do begin
       event_precip = [[[event_precip]],[[rainnc]]]
       event_ivtU   = [[[event_ivtU]],[[ivtU]]]
       event_ivtV   = [[[event_ivtV]],[[ivtV]]]
+      event_z0k    = [[[event_z0k]],[[z0k]]]
    endif
    init = 0
 
@@ -231,6 +233,7 @@ varID9  = ncdf_vardef(fileID,'hour',              [              dimID3],/long)
 varID6  = ncdf_vardef(fileID,'precip',            [dimID1,dimID2,dimID3],/float)
 varID7  = ncdf_vardef(fileID,'ivtU',              [dimID1,dimID2,dimID3],/float)
 varID8  = ncdf_vardef(fileID,'ivtV',              [dimID1,dimID2,dimID3],/float)
+varID10 = ncdf_vardef(fileID,'z0k',               [dimID1,dimID2,dimID3],/float)
 ncdf_control,fileID,/endef
 ncdf_varput,fileID,varID1,lon
 ncdf_varput,fileID,varID2,lat
@@ -241,6 +244,7 @@ ncdf_varput,fileID,varID6,event_precip
 ncdf_varput,fileID,varID7,ivtU
 ncdf_varput,fileID,varID8,ivtV
 ncdf_varput,fileID,varID9,event_hour
+ncdf_varput,fileID,varID10,event_z0k
 ncdf_close,fileID
 
 ; END PROGRAM
