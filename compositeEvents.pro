@@ -217,6 +217,11 @@ for ij=0,nEvents-1 do begin
    badEvent:
 end
 
+bground = where(event_z0k lt 0)
+if(bground(0) ne -1) then event_z0k(bground)=0
+
+event_ivt = sqrt(event_ivtU*event_ivtU + event_ivtV*event_ivtV)
+
 ; Write output
 print,'Writing to output...'
 fileOUT = 'composite.raw.'+fileIN
@@ -231,8 +236,8 @@ varID4  = ncdf_vardef(fileID,'month',             [              dimID3],/long)
 varID5  = ncdf_vardef(fileID,'day',               [              dimID3],/long)
 varID9  = ncdf_vardef(fileID,'hour',              [              dimID3],/long)
 varID6  = ncdf_vardef(fileID,'precip',            [dimID1,dimID2,dimID3],/float)
-varID7  = ncdf_vardef(fileID,'ivtU',              [dimID1,dimID2,dimID3],/float)
-varID8  = ncdf_vardef(fileID,'ivtV',              [dimID1,dimID2,dimID3],/float)
+varID7  = ncdf_vardef(fileID,'ivt',               [dimID1,dimID2,dimID3],/float)
+;varID8  = ncdf_vardef(fileID,'ivtV',              [dimID1,dimID2,dimID3],/float)
 varID10 = ncdf_vardef(fileID,'z0k',               [dimID1,dimID2,dimID3],/float)
 ncdf_control,fileID,/endef
 ncdf_varput,fileID,varID1,lon
@@ -241,8 +246,7 @@ ncdf_varput,fileID,varID3,event_year
 ncdf_varput,fileID,varID4,event_month
 ncdf_varput,fileID,varID5,event_day
 ncdf_varput,fileID,varID6,event_precip
-ncdf_varput,fileID,varID7,ivtU
-ncdf_varput,fileID,varID8,ivtV
+ncdf_varput,fileID,varID7,event_ivt
 ncdf_varput,fileID,varID9,event_hour
 ncdf_varput,fileID,varID10,event_z0k
 ncdf_close,fileID
