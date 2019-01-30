@@ -60,13 +60,15 @@ xF         = -122.75
 y0         =  42.50
 yF         =  47.50
 nDRs       = 20
-d_dnstream = 0.5
+d_dnstream = 1.5
+# Compute array of starting/ending points
 lon_upstream  = [i for i in np.arange(x0,xF+((xF-x0)/(nDRs-1)),((xF-x0)/(nDRs-1)))]
 lat_upstream  = [i for i in np.arange(y0,yF+((yF-y0)/(nDRs-1)),((yF-y0)/(nDRs-1)))]
 x0d   = x0 + d_dnstream
 xFd   = xF + d_dnstream
 lon_dnstream  = [i for i in np.arange(x0d,xFd+((xFd-x0d)/(nDRs-1)),((xFd-x0d)/(nDRs-1)))]
 lat_dnstream  = [i for i in np.arange(y0,yF+((yF-y0)/(nDRs-1)),((yF-y0)/(nDRs-1)))]
+
 # OR 2) Define a set of points (if you just want to manually enter a few points)
 #lon_upstream = [-110.1, -120.7]
 #lat_upstream = [  45.0,   46.0]
@@ -178,7 +180,6 @@ if (modelID != 'erain'):
             ivt_dnstreamF[il,iTime] = dataIN.variables['ivt'][iTime,lati_dnstream[il],lon_dnstream[il]]
             z0k_dnstreamF[il,iTime] = dataIN.variables['z0k'][iTime,lati_dnstream[il],lon_dnstream[il]]
 
-    
 # Close output file
 dataOUT.close()
 ##########################################################################################
