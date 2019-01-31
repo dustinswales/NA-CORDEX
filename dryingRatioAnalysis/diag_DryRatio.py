@@ -42,7 +42,7 @@ configID = "Take1"
 # WRF horizontal resolution (50 or 25)
 res         = 50
 # Event strength threshold (percentile)
-ptile       = '96.00'
+ptile       = '97.00'
 # Event persistence threshold (hours)
 persistence = 24
 # Model ID
@@ -84,13 +84,17 @@ dir = '/data/dswales/NA-CORDEX/ARdet/composites/'
 #  - Read in grid and determine WRF gridpoint nearest to requested drying-ratio calculation
 ##########################################################################################
 # Get filenames
-fileH_Composite = find('composite.raw.*.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
-fileF_Composite = find('composite.raw.*.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileH_precip = find('composite.raw.precip.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileH_ivt    = find('composite.raw.ivt.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileH_z0k    = find('composite.raw.z0k.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileF_precip = find('composite.raw.precip.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileF_ivt    = find('composite.raw.ivt.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileF_z0k    = find('composite.raw.z0k.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
 
 # Open file
-dataIN1 = netCDF4.Dataset(fileH_Composite[0],'r')
-dataIN2 = netCDF4.Dataset(fileH_Composite[1],'r')
-dataIN3 = netCDF4.Dataset(fileH_Composite[2],'r')
+dataIN1 = netCDF4.Dataset(fileH_precip[0],'r')
+dataIN2 = netCDF4.Dataset(fileH_ivt[0],'r')
+dataIN3 = netCDF4.Dataset(fileH_z0k[0],'r')
 lon    = dataIN1.variables['lon'][:]
 lat    = dataIN1.variables['lat'][:]
 yearH  = dataIN1.variables['year'][:]
@@ -168,16 +172,16 @@ dayH_out[:]   = dataIN1.variables['day'  ][:]
 hourH_out[:]  = dataIN1.variables['hour' ][:]
 for il in range(0,nDRs):
     for im in range(0,nPtsAlongTransect):
-        precip_transectH[il,im,:] = dataIN2.variables['precip'][:,lati_transect[il,im],loni_transect[il,im]]
-        ivt_transectH[il,im,:]    = dataIN3.variables['ivt'   ][:,lati_transect[il,im],loni_transect[il,im]]
-        z0k_transectH[il,im,:]    = dataIN1.variables['z0k'   ][:,lati_transect[il,im],loni_transect[il,im]]
+        ivt_transectH[il,im,:]    = dataIN2.variables['ivt'    ][:,lati_transect[il,im],loni_transect[il,im]]
+        precip_transectH[il,im,:] = dataIN1.variables['precip' ][:,lati_transect[il,im],loni_transect[il,im]]
+        z0k_transectH[il,im,:]    = dataIN3.variables['z0k'    ][:,lati_transect[il,im],loni_transect[il,im]]
 
 # ii) Future period (only GCMs)
 if (modelID != 'erain'):
     # Read in future file metadata
-    dataIN1 = netCDF4.Dataset(fileF_Composite[0],'r')
-    dataIN2 = netCDF4.Dataset(fileF_Composite[1],'r')
-    dataIN3 = netCDF4.Dataset(fileF_Composite[2],'r')
+    dataIN1 = netCDF4.Dataset(fileF_precip[0],'r')
+    dataIN2 = netCDF4.Dataset(fileF_ivt[0],'r')
+    dataIN3 = netCDF4.Dataset(fileF_z0k[0],'r')
     yearF  = dataIN1.variables['year'][:]
     monthF = dataIN1.variables['month'][:]
     dayF   = dataIN1.variables['day'][:]
@@ -201,9 +205,9 @@ if (modelID != 'erain'):
     hourF_out[:]  = dataIN1.variables['hour' ][:]
     for il in range(0,nDRs):
         for im in range(0,nPtsAlongTransect):
-            precip_transectF[il,im,:] = dataIN2.variables['precip'][:,lati_transect[il,im],loni_transect[il,im]]
-            ivt_transectF[il,im,:]    = dataIN3.variables['ivt'   ][:,lati_transect[il,im],loni_transect[il,im]]
-            z0k_transectF[il,im,:]    = dataIN1.variables['z0k'   ][:,lati_transect[il,im],loni_transect[il,im]]
+            ivt_transectF[il,im,:]    = dataIN2.variables['ivt'    ][:,lati_transect[il,im],loni_transect[il,im]]
+            precip_transectF[il,im,:] = dataIN1.variables['precip' ][:,lati_transect[il,im],loni_transect[il,im]]
+            z0k_transectF[il,im,:]    = dataIN3.variables['z0k'    ][:,lati_transect[il,im],loni_transect[il,im]]            
 
 # Close output file
 dataOUT.close()
