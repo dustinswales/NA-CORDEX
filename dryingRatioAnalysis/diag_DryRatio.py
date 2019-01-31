@@ -57,9 +57,9 @@ fileOUT = dirOUT+"dryingRatios."+configID+"."+str(res)+'km.'+ptile+'ptile.'+str(
 #    (d_dnstream; in Degrees) from that line
 x0         = -123.25
 xF         = -122.50
-y0         =  42.50
+y0         =  44.50
 yF         =  47.50
-nDRs       = 5
+nDRs       = 20
 d_dnstream = 2.0
 x0d        = x0 + d_dnstream
 xFd        = xF + d_dnstream
