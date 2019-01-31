@@ -46,7 +46,7 @@ ptile       = '96.00'
 # Event persistence threshold (hours)
 persistence = 24
 # Model ID
-modelID = 'mpi'
+modelID = 'gfdl'
 
 # Where to output results?
 dirOUT  = "/data/dswales/NA-CORDEX/ARdet/dryingRatios/"
@@ -55,19 +55,19 @@ fileOUT = dirOUT+"dryingRatios."+configID+"."+str(res)+'km.'+ptile+'ptile.'+str(
 # Where to compute drying ratios?
 # 1) Define a line ([x0,y0],[xF,yF]), number of points (nDRs), and a distance downstream
 #    (d_dnstream; in Degrees) from that line
-x0         = -123.50
-xF         = -122.75
+x0         = -123.25
+xF         = -122.50
 y0         =  42.50
 yF         =  47.50
-nDRs       = 20
-d_dnstream = 1.5
+nDRs       = 5
+d_dnstream = 2.0
+x0d        = x0 + d_dnstream
+xFd        = xF + d_dnstream
 # Compute array of starting/ending points
-lon_upstream  = [i for i in np.arange(x0,xF+((xF-x0)/(nDRs-1)),((xF-x0)/(nDRs-1)))]
-lat_upstream  = [i for i in np.arange(y0,yF+((yF-y0)/(nDRs-1)),((yF-y0)/(nDRs-1)))]
-x0d   = x0 + d_dnstream
-xFd   = xF + d_dnstream
-lon_dnstream  = [i for i in np.arange(x0d,xFd+((xFd-x0d)/(nDRs-1)),((xFd-x0d)/(nDRs-1)))]
-lat_dnstream  = [i for i in np.arange(y0,yF+((yF-y0)/(nDRs-1)),((yF-y0)/(nDRs-1)))]
+lon_upstream  = [i for i in np.arange(x0, xF, ((xF-x0)/(nDRs)))]
+lat_upstream  = [i for i in np.arange(y0, yF, ((yF-y0)/(nDRs)))]
+lon_dnstream  = [i for i in np.arange(x0d,xFd,((xFd-x0d)/(nDRs)))]
+lat_dnstream  = [i for i in np.arange(y0, yF, ((yF-y0)/(nDRs)))]
 
 # OR 2) Define a set of points (if you just want to manually enter a few points)
 #lon_upstream = [-110.1, -120.7]
@@ -84,17 +84,19 @@ dir = '/data/dswales/NA-CORDEX/ARdet/composites/'
 #  - Read in grid and determine WRF gridpoint nearest to requested drying-ratio calculation
 ##########################################################################################
 # Get filenames
-fileH_Composite = find('composite.raw.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
-fileF_Composite = find('composite.raw.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileH_Composite = find('composite.raw.*.events.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
+fileF_Composite = find('composite.raw.*.events.future.'+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+'.nc', dir)
 
 # Open file
-dataIN = netCDF4.Dataset(fileH_Composite[0],'r')
-lon    = dataIN.variables['lon'][:]
-lat    = dataIN.variables['lat'][:]
-yearH  = dataIN.variables['year'][:]
-monthH = dataIN.variables['month'][:]
-dayH   = dataIN.variables['day'][:]
-hourH  = dataIN.variables['hour'][:]
+dataIN1 = netCDF4.Dataset(fileH_Composite[0],'r')
+dataIN2 = netCDF4.Dataset(fileH_Composite[1],'r')
+dataIN3 = netCDF4.Dataset(fileH_Composite[2],'r')
+lon    = dataIN1.variables['lon'][:]
+lat    = dataIN1.variables['lat'][:]
+yearH  = dataIN1.variables['year'][:]
+monthH = dataIN1.variables['month'][:]
+dayH   = dataIN1.variables['day'][:]
+hourH  = dataIN1.variables['hour'][:]
 ntimeH = len(yearH)
 nlon   = len(lon[:,0])
 nlat   = len(lat[0,:])
@@ -118,6 +120,19 @@ for il in range(0,nDRs):
     ncol              = dlonlat_dnstream.shape[1]
     loni_dnstream[il] = kdn/ncol
     lati_dnstream[il] = kdn%ncol
+    # Also store indices for points neighboring the transect from [upstrem,downstream]
+    if (il==0):
+        dyTransect = int(lati_dnstream[il])-int(lati_upstream[il])+1
+        dxTransect = int(loni_upstream[il])-int(loni_dnstream[il])+1
+        nPtsAlongTransect = dxTransect*dyTransect
+        loni_transect = np.zeros([nDRs,nPtsAlongTransect])
+        lati_transect = np.zeros([nDRs,nPtsAlongTransect])
+    count = 0
+    for ix in range(0,dxTransect):
+        for iy in range(0,dyTransect):
+            loni_transect[il,count] = loni_upstream[il]-ix
+            lati_transect[il,count] = lati_upstream[il]+iy
+            count = count+1
 
 ##########################################################################################
 # ii) Create output file
@@ -125,60 +140,70 @@ for il in range(0,nDRs):
 dataOUT = netCDF4.Dataset(fileOUT,'w',format='NETCDF4_CLASSIC')
 dataOUT.createDimension("case",nDRs)
 dataOUT.createDimension("timeH",ntimeH)
-yearH_out     = dataOUT.createVariable("yearH",         "i4", ("timeH"))
-monthH_out    = dataOUT.createVariable("monthH",        "i4", ("timeH"))
-dayH_out      = dataOUT.createVariable("dayH",          "i4", ("timeH"))
-hourH_out     = dataOUT.createVariable("hourH",         "i4", ("timeH"))
-ivt_upstreamH = dataOUT.createVariable("IVT_upstreamH", "f4", ("case","timeH"))
-ivt_dnstreamH = dataOUT.createVariable("IVT_dnstreamH", "f4", ("case","timeH"))
-z0k_upstreamH = dataOUT.createVariable("z0k_upstreamH", "f4", ("case","timeH"))
-z0k_dnstreamH = dataOUT.createVariable("z0k_dnstreamH", "f4", ("case","timeH"))
+dataOUT.createDimension("xTransect",nPtsAlongTransect)
+lonup_out        = dataOUT.createVariable("lon_upstream",     "f4", ("case"                    ))
+londn_out        = dataOUT.createVariable("lon_dnstream",     "f4", ("case"                    ))
+latup_out        = dataOUT.createVariable("lat_upstream",     "f4", ("case"                    ))
+latdn_out        = dataOUT.createVariable("lat_dnstream",     "f4", ("case"                    ))
+yearH_out        = dataOUT.createVariable("yearH",            "i4", (                   "timeH"))
+monthH_out       = dataOUT.createVariable("monthH",           "i4", (                   "timeH"))
+dayH_out         = dataOUT.createVariable("dayH",             "i4", (                   "timeH"))
+hourH_out        = dataOUT.createVariable("hourH",            "i4", (                   "timeH"))
+precip_transectH = dataOUT.createVariable("precip_transectH", "f4", ("case","xTransect","timeH"))
+ivt_transectH    = dataOUT.createVariable("ivt_transectH",    "f4", ("case","xTransect","timeH"))
+z0k_transectH    = dataOUT.createVariable("z0k_transectH",    "f4", ("case","xTransect","timeH"))
+lonup_out[:]     = lon_upstream[:]
+latup_out[:]     = lat_upstream[:]
+londn_out[:]     = lon_dnstream[:]
+latdn_out[:]     = lat_dnstream[:]
 
 ##########################################################################################
 # iii) Now that we know the indices of the points we are interested in, readin in data at
 #      these points, compute drying-ratio, and write output to netCDF.
 ##########################################################################################
 # i) Historical period.
-
-for iTime in range(0,ntimeH):
-    yearH_out[iTime]  = dataIN.variables['year' ][iTime]
-    monthH_out[iTime] = dataIN.variables['month'][iTime]
-    dayH_out[iTime]   = dataIN.variables['day'  ][iTime]
-    hourH_out[iTime]  = dataIN.variables['hour' ][iTime]
-    for il in range(0,nDRs):
-        ivt_upstreamH[il,iTime] = dataIN.variables['ivt'][iTime,lati_upstream[il],lon_upstream[il]]
-        z0k_upstreamH[il,iTime] = dataIN.variables['z0k'][iTime,lati_upstream[il],lon_upstream[il]]
-        ivt_dnstreamH[il,iTime] = dataIN.variables['ivt'][iTime,lati_dnstream[il],lon_dnstream[il]]
-        z0k_dnstreamH[il,iTime] = dataIN.variables['z0k'][iTime,lati_dnstream[il],lon_dnstream[il]]
+yearH_out[:]  = dataIN1.variables['year' ][:]
+monthH_out[:] = dataIN1.variables['month'][:]
+dayH_out[:]   = dataIN1.variables['day'  ][:]
+hourH_out[:]  = dataIN1.variables['hour' ][:]
+for il in range(0,nDRs):
+    for im in range(0,nPtsAlongTransect):
+        precip_transectH[il,im,:] = dataIN2.variables['precip'][:,lati_transect[il,im],loni_transect[il,im]]
+        ivt_transectH[il,im,:]    = dataIN3.variables['ivt'   ][:,lati_transect[il,im],loni_transect[il,im]]
+        z0k_transectH[il,im,:]    = dataIN1.variables['z0k'   ][:,lati_transect[il,im],loni_transect[il,im]]
 
 # ii) Future period (only GCMs)
 if (modelID != 'erain'):
-    dataIN = netCDF4.Dataset(fileF_Composite[0],'r')
-    yearF  = dataIN.variables['year'][:]
-    monthF = dataIN.variables['month'][:]
-    dayF   = dataIN.variables['day'][:]
-    hourF  = dataIN.variables['hour'][:]
+    # Read in future file metadata
+    dataIN1 = netCDF4.Dataset(fileF_Composite[0],'r')
+    dataIN2 = netCDF4.Dataset(fileF_Composite[1],'r')
+    dataIN3 = netCDF4.Dataset(fileF_Composite[2],'r')
+    yearF  = dataIN1.variables['year'][:]
+    monthF = dataIN1.variables['month'][:]
+    dayF   = dataIN1.variables['day'][:]
+    hourF  = dataIN1.variables['hour'][:]
     ntimeF = len(yearF)
-    # Add future fields to outputs
+    
+    # Add future fields to output file
     dataOUT.createDimension("timeF",ntimeF)
-    yearF_out     = dataOUT.createVariable("yearF",         "i4", ("timeF"))
-    monthF_out    = dataOUT.createVariable("monthF",        "i4", ("timeF"))
-    dayF_out      = dataOUT.createVariable("dayF",          "i4", ("timeF"))
-    hourF_out     = dataOUT.createVariable("hourF",         "i4", ("timeF"))
-    ivt_upstreamF = dataOUT.createVariable("IVT_upstreamF", "f4", ("case","timeF"))
-    ivt_dnstreamF = dataOUT.createVariable("IVT_dnstreamF", "f4", ("case","timeF"))
-    z0k_upstreamF = dataOUT.createVariable("z0k_upstreamF", "f4", ("case","timeF"))
-    z0k_dnstreamF = dataOUT.createVariable("z0k_dnstreamF", "f4", ("case","timeF"))
-    for iTime in range(0,ntimeF):
-        yearF_out[iTime]  = dataIN.variables['year' ][iTime]
-        monthF_out[iTime] = dataIN.variables['month'][iTime]
-        dayF_out[iTime]   = dataIN.variables['day'  ][iTime]
-        hourF_out[iTime]  = dataIN.variables['hour' ][iTime]
-        for il in range(0,nDRs):
-            ivt_upstreamF[il,iTime] = dataIN.variables['ivt'][iTime,lati_upstream[il],lon_upstream[il]]
-            z0k_upstreamF[il,iTime] = dataIN.variables['z0k'][iTime,lati_upstream[il],lon_upstream[il]]
-            ivt_dnstreamF[il,iTime] = dataIN.variables['ivt'][iTime,lati_dnstream[il],lon_dnstream[il]]
-            z0k_dnstreamF[il,iTime] = dataIN.variables['z0k'][iTime,lati_dnstream[il],lon_dnstream[il]]
+    yearF_out        = dataOUT.createVariable("yearF",            "i4", (                   "timeF"))
+    monthF_out       = dataOUT.createVariable("monthF",           "i4", (                   "timeF"))
+    dayF_out         = dataOUT.createVariable("dayF",             "i4", (                   "timeF"))
+    hourF_out        = dataOUT.createVariable("hourF",            "i4", (                   "timeF"))
+    precip_transectF = dataOUT.createVariable("precip_transectF", "f4", ("case","xTransect","timeF"))
+    ivt_transectF    = dataOUT.createVariable("ivt_transectF",    "f4", ("case","xTransect","timeF"))
+    z0k_transectF    = dataOUT.createVariable("z0k_transectF",    "f4", ("case","xTransect","timeF"))
+    
+    # Read in data
+    yearF_out[:]  = dataIN1.variables['year' ][:]
+    monthF_out[:] = dataIN1.variables['month'][:]
+    dayF_out[:]   = dataIN1.variables['day'  ][:]
+    hourF_out[:]  = dataIN1.variables['hour' ][:]
+    for il in range(0,nDRs):
+        for im in range(0,nPtsAlongTransect):
+            precip_transectF[il,im,:] = dataIN2.variables['precip'][:,lati_transect[il,im],loni_transect[il,im]]
+            ivt_transectF[il,im,:]    = dataIN3.variables['ivt'   ][:,lati_transect[il,im],loni_transect[il,im]]
+            z0k_transectF[il,im,:]    = dataIN1.variables['z0k'   ][:,lati_transect[il,im],loni_transect[il,im]]
 
 # Close output file
 dataOUT.close()
