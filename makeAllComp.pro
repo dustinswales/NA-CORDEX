@@ -25,8 +25,8 @@ for ij=0,nmods-1 do begin
       for il=0,npthresh-1 do begin
          print,'########################################################'
          print,models(ij),ivtThresh(ik),pThresh(il)
-         compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),pThresh(il),0
-         if (ij ne 0) then compositeEvents,dirOUT,models(ij),ivtThresh(ik),pThresh(il),1
+         compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),pThresh(il),0,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
+         if (ij ne 0) then compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),pThresh(il),1,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
       end
    end
 end

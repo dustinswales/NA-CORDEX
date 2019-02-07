@@ -35,9 +35,6 @@ def haversine(lon1, lat1, lon2, lat2):
 # Configuration
 ##########################################################################################
 
-# Assign some name for configuration, do this to avoid overwriting previous results.
-configID = "Take1"
-
 # What composites to look at?
 # WRF horizontal resolution (50 or 25)
 res         = 50
@@ -46,11 +43,14 @@ ptile       = '97.00'
 # Event persistence threshold (hours)
 persistence = 24
 # Model ID
-modelID = 'gfdl'
+modelID = 'hadgem'
 
-# Where to output results?
-dirOUT  = "/data/dswales/NA-CORDEX/ARdet/dryingRatios/"
-fileOUT = dirOUT+"dryingRatios."+configID+"."+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+".nc"
+# PDF Configuration
+nBins = 21   # Number of drying-ratio/precipitation bins
+xMax  = 0.6  # Drying-ratio (max)
+xMin  = 0.0  # Drying-ratio (min)
+yMax  = 5.   # Precipitation (max)
+yMin  = 1    # Precipitation (min)
 
 # Where to compute drying ratios?
 # 1) Define a line ([x0,y0],[xF,yF]), number of points (nDRs), and a distance downstream
@@ -63,6 +63,8 @@ nDRs       = 20
 d_dnstream = 2.0
 x0d        = x0 + d_dnstream
 xFd        = xF + d_dnstream
+# Assign some name for configuration, do this to avoid overwriting previous results.
+configID = "Take1"
 # Compute array of starting/ending points
 lon_upstream  = [i for i in np.arange(x0, xF, ((xF-x0)/(nDRs)))]
 lat_upstream  = [i for i in np.arange(y0, yF, ((yF-y0)/(nDRs)))]
@@ -78,6 +80,10 @@ lat_dnstream  = [i for i in np.arange(y0, yF, ((yF-y0)/(nDRs)))]
 
 # Directory containing event composites.
 dir = '/data/dswales/NA-CORDEX/ARdet/composites/'
+
+# Where to output results?
+dirOUT  = "/data/dswales/NA-CORDEX/ARdet/dryingRatios/"
+fileOUT = dirOUT+"dryingRatios."+configID+"."+str(res)+'km.'+ptile+'ptile.'+str(persistence)+'hrs.'+modelID+".nc"
 
 ##########################################################################################
 # i) Read in metadata.
@@ -145,6 +151,9 @@ dataOUT = netCDF4.Dataset(fileOUT,'w',format='NETCDF4_CLASSIC')
 dataOUT.createDimension("case",nDRs)
 dataOUT.createDimension("timeH",ntimeH)
 dataOUT.createDimension("xTransect",nPtsAlongTransect)
+dataOUT.createDimension("nXpdf",nBins-1)
+dataOUT.createDimension("nYpdf",nBins-1)
+dataOUT.createDimension("pdfBins",nBins)
 lonup_out        = dataOUT.createVariable("lon_upstream",     "f4", ("case"                    ))
 londn_out        = dataOUT.createVariable("lon_dnstream",     "f4", ("case"                    ))
 latup_out        = dataOUT.createVariable("lat_upstream",     "f4", ("case"                    ))
@@ -156,6 +165,12 @@ hourH_out        = dataOUT.createVariable("hourH",            "i4", (           
 precip_transectH = dataOUT.createVariable("precip_transectH", "f4", ("case","xTransect","timeH"))
 ivt_transectH    = dataOUT.createVariable("ivt_transectH",    "f4", ("case","xTransect","timeH"))
 z0k_transectH    = dataOUT.createVariable("z0k_transectH",    "f4", ("case","xTransect","timeH"))
+drH              = dataOUT.createVariable("drH",              "f4", ("case",            "timeH"))
+xpdf_center      = dataOUT.createVariable("xpdf_center",      "f4", ("nXpdf"                   ))
+ypdf_center      = dataOUT.createVariable("ypdf_center",      "f4", (        "nYpdf"           ))
+xpdf_edge        = dataOUT.createVariable("xpdf_edge",        "f4", ("pdfBins"                 ))
+ypdf_edge        = dataOUT.createVariable("ypdf_edge",        "f4", (        "pdfBins"         ))
+pdfH             = dataOUT.createVariable("pdfH",             "f4", ("nYpdf","nXpdf"           ))
 lonup_out[:]     = lon_upstream[:]
 latup_out[:]     = lat_upstream[:]
 londn_out[:]     = lon_dnstream[:]
@@ -175,6 +190,8 @@ for il in range(0,nDRs):
         ivt_transectH[il,im,:]    = dataIN2.variables['ivt'    ][:,lati_transect[il,im],loni_transect[il,im]]
         precip_transectH[il,im,:] = dataIN1.variables['precip' ][:,lati_transect[il,im],loni_transect[il,im]]
         z0k_transectH[il,im,:]    = dataIN3.variables['z0k'    ][:,lati_transect[il,im],loni_transect[il,im]]
+drHa     = 1-ivt_transectH[:,0,:]/ivt_transectH[:,nPtsAlongTransect-1,:]
+drH[:,:] = drHa
 
 # ii) Future period (only GCMs)
 if (modelID != 'erain'):
@@ -197,7 +214,9 @@ if (modelID != 'erain'):
     precip_transectF = dataOUT.createVariable("precip_transectF", "f4", ("case","xTransect","timeF"))
     ivt_transectF    = dataOUT.createVariable("ivt_transectF",    "f4", ("case","xTransect","timeF"))
     z0k_transectF    = dataOUT.createVariable("z0k_transectF",    "f4", ("case","xTransect","timeF"))
-    
+    drF              = dataOUT.createVariable("drF",              "f4", ("case",            "timeF"))
+    pdfF             = dataOUT.createVariable("pdfF",             "f4", ("nYpdf","nXpdf"           ))
+
     # Read in data
     yearF_out[:]  = dataIN1.variables['year' ][:]
     monthF_out[:] = dataIN1.variables['month'][:]
@@ -208,6 +227,49 @@ if (modelID != 'erain'):
             ivt_transectF[il,im,:]    = dataIN2.variables['ivt'    ][:,lati_transect[il,im],loni_transect[il,im]]
             precip_transectF[il,im,:] = dataIN1.variables['precip' ][:,lati_transect[il,im],loni_transect[il,im]]
             z0k_transectF[il,im,:]    = dataIN3.variables['z0k'    ][:,lati_transect[il,im],loni_transect[il,im]]            
+    drFa = 1-ivt_transectF[:,0,:]/ivt_transectF[:,nPtsAlongTransect-1,:]
+    drF[:,:]=drFa
+    
+##########################################################################################
+# iv) Compute and output joint-PDFs of statistics.
+##########################################################################################
+# Which DRs have precipitation observed along the transect?
+precipTotTransH = np.sum(precip_transectH,axis=1)
+dryTransectsH = np.argwhere((precipTotTransH != 0) & (drHa <= 0))
+wetTransectsH = np.argwhere((precipTotTransH != 0) & (drHa > 0))
+nWetH = len(wetTransectsH)
+nDryH = len(dryTransectsH)
+if (modelID != 'erain'):
+    precipTotTransF = np.sum(precip_transectF,axis=1)
+    dryTransectsF = np.argwhere((precipTotTransF != 0) & (drFa <= 0))
+    wetTransectsF = np.argwhere((precipTotTransF != 0) & (drFa > 0))
+    nWetF = len(wetTransectsF)
+    nDryF = len(dryTransectsF)
+
+# Compute histogram bin-boundaries
+dX   = (xMax-xMin)/(float(nBins)-1)
+dY   = (yMax-yMin)/(float(nBins)-1)
+xaxis = [i for i in np.arange(xMin, xMax+dX, dX)]
+yaxis = [i for i in np.arange(yMin, yMax+dY, dY)]
+
+# Historical 
+[pdf2DH,xi1,yi1]=np.histogram2d(drHa[wetTransectsH[:,0],wetTransectsH[:,1]], \
+                                precipTotTransH[wetTransectsH[:,0],wetTransectsH[:,1]], \
+                                bins = [xaxis,yaxis])
+pdfH[:,:] = pdf2DH#/sum(pdf2DH)
+
+# Future
+if (modelID != 'erain'):
+    [pdf2DF,xi2,yi2]=np.histogram2d(drFa[wetTransectsF[:,0],wetTransectsF[:,1]], \
+                                    precipTotTransF[wetTransectsF[:,0],wetTransectsF[:,1]], \
+                                    bins = [xaxis,yaxis])
+    pdfF[:,:] = pdf2DF#/sum(pdf2DF)
+    
+# Store bin centers/edges
+xpdf_center[:] = (xi1[1:nBins]+xi1[0:nBins-1])/2.
+ypdf_center[:] = (yi1[1:nBins]+yi1[0:nBins-1])/2.
+xpdf_edge[:]   = xi1
+ypdf_edge[:]   = yi1
 
 # Close output file
 dataOUT.close()

@@ -16,7 +16,7 @@
 ; Output is written to netCDF and stored in dirOUT.
 ;
 ; ######################################################################### 
-pro compositeEvents,dirIN,dirOUT,modelID,ivtThresh,persistenceThresh,future
+pro compositeEvents,dirIN,dirOUT,modelID,ivtThresh,persistenceThresh,future,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
 ; Output directory
 ; dirOUT = '/data/dswales/NA-CORDEX/ARdet/'
 ; IVT threshold (standardized)
@@ -224,32 +224,72 @@ event_ivt = sqrt(event_ivtU*event_ivtU + event_ivtV*event_ivtV)
 
 ; Write output
 print,'Writing to output...'
-fileOUT = 'composite.raw.'+fileIN
-fileID  = ncdf_create(dirOUT+fileOUT,/clobber)
-dimID1  = ncdf_dimdef(fileID,'lon',nlon)
-dimID2  = ncdf_dimdef(fileID,'lat',nlat)
-dimID3  = ncdf_dimdef(fileID,'ntime',n_elements(event_day))
-varID1  = ncdf_vardef(fileID,'lon',               [dimID1,dimID2       ],/float)
-varID2  = ncdf_vardef(fileID,'lat',               [dimID1,dimID2       ],/float)
-varID3  = ncdf_vardef(fileID,'year',              [              dimID3],/long)
-varID4  = ncdf_vardef(fileID,'month',             [              dimID3],/long)
-varID5  = ncdf_vardef(fileID,'day',               [              dimID3],/long)
-varID9  = ncdf_vardef(fileID,'hour',              [              dimID3],/long)
-varID6  = ncdf_vardef(fileID,'precip',            [dimID1,dimID2,dimID3],/float)
-varID7  = ncdf_vardef(fileID,'ivt',               [dimID1,dimID2,dimID3],/float)
-;varID8  = ncdf_vardef(fileID,'ivtV',              [dimID1,dimID2,dimID3],/float)
-varID10 = ncdf_vardef(fileID,'z0k',               [dimID1,dimID2,dimID3],/float)
-ncdf_control,fileID,/endef
-ncdf_varput,fileID,varID1,lon
-ncdf_varput,fileID,varID2,lat
-ncdf_varput,fileID,varID3,event_year
-ncdf_varput,fileID,varID4,event_month
-ncdf_varput,fileID,varID5,event_day
-ncdf_varput,fileID,varID6,event_precip
-ncdf_varput,fileID,varID7,event_ivt
-ncdf_varput,fileID,varID9,event_hour
-ncdf_varput,fileID,varID10,event_z0k
-ncdf_close,fileID
+fileOUT_precip = 'composite.raw.precip.'+fileIN
+fileOUT_ivt    = 'composite.raw.ivt.'+fileIN
+fileOUT_z0k    = 'composite.raw.z0k.'+fileIN
+; Precip file
+fileID_precip  = ncdf_create(dirOUT+fileOUT_precip,/clobber)
+dimID1  = ncdf_dimdef(fileID_precip,'lon',nlon)
+dimID2  = ncdf_dimdef(fileID_precip,'lat',nlat)
+dimID3  = ncdf_dimdef(fileID_precip,'ntime',n_elements(event_day))
+varID1  = ncdf_vardef(fileID_precip,'lon',  [dimID1,dimID2       ],/float)
+varID2  = ncdf_vardef(fileID_precip,'lat',  [dimID1,dimID2       ],/float)
+varID3  = ncdf_vardef(fileID_precip,'year', [              dimID3],/long)
+varID4  = ncdf_vardef(fileID_precip,'month',[              dimID3],/long)
+varID5  = ncdf_vardef(fileID_precip,'day',  [              dimID3],/long)
+varID9  = ncdf_vardef(fileID_precip,'hour', [              dimID3],/long)
+varID6  = ncdf_vardef(fileID_precip,'precip', [dimID1,dimID2,dimID3],/float)
+ncdf_control,fileID_precip,/endef
+ncdf_varput,fileID_precip,varID1,lon
+ncdf_varput,fileID_precip,varID2,lat
+ncdf_varput,fileID_precip,varID3,event_year
+ncdf_varput,fileID_precip,varID4,event_month
+ncdf_varput,fileID_precip,varID5,event_day
+ncdf_varput,fileID_precip,varID9,event_hour
+ncdf_varput,fileID_precip,varID6,event_precip
+ncdf_close,fileID_precip
+; IVT file
+fileID_ivt  = ncdf_create(dirOUT+fileOUT_ivt,/clobber)
+dimID1  = ncdf_dimdef(fileID_ivt,'lon',nlon)
+dimID2  = ncdf_dimdef(fileID_ivt,'lat',nlat)
+dimID3  = ncdf_dimdef(fileID_ivt,'ntime',n_elements(event_day))
+varID1  = ncdf_vardef(fileID_ivt,'lon',  [dimID1,dimID2       ],/float)
+varID2  = ncdf_vardef(fileID_ivt,'lat',  [dimID1,dimID2       ],/float)
+varID3  = ncdf_vardef(fileID_ivt,'year', [              dimID3],/long)
+varID4  = ncdf_vardef(fileID_ivt,'month',[              dimID3],/long)
+varID5  = ncdf_vardef(fileID_ivt,'day',  [              dimID3],/long)
+varID9  = ncdf_vardef(fileID_ivt,'hour', [              dimID3],/long)
+varID7  = ncdf_vardef(fileID_ivt,'ivt',  [dimID1,dimID2,dimID3],/float)
+ncdf_control,fileID_ivt,/endef
+ncdf_varput,fileID_ivt,varID1,lon
+ncdf_varput,fileID_ivt,varID2,lat
+ncdf_varput,fileID_ivt,varID3,event_year
+ncdf_varput,fileID_ivt,varID4,event_month
+ncdf_varput,fileID_ivt,varID5,event_day
+ncdf_varput,fileID_ivt,varID9,event_hour
+ncdf_varput,fileID_ivt,varID7,event_ivt
+ncdf_close,fileID_ivt
+; Z0k file
+fileID_z0k  = ncdf_create(dirOUT+fileOUT_z0k,/clobber)
+dimID1  = ncdf_dimdef(fileID_z0k,'lon',nlon)
+dimID2  = ncdf_dimdef(fileID_z0k,'lat',nlat)
+dimID3  = ncdf_dimdef(fileID_z0k,'ntime',n_elements(event_day))
+varID1  = ncdf_vardef(fileID_z0k,'lon',  [dimID1,dimID2       ],/float)
+varID2  = ncdf_vardef(fileID_z0k,'lat',  [dimID1,dimID2       ],/float)
+varID3  = ncdf_vardef(fileID_z0k,'year', [              dimID3],/long)
+varID4  = ncdf_vardef(fileID_z0k,'month',[              dimID3],/long)
+varID5  = ncdf_vardef(fileID_z0k,'day',  [              dimID3],/long)
+varID9  = ncdf_vardef(fileID_z0k,'hour', [              dimID3],/long)
+varID10 = ncdf_vardef(fileID_z0k,'z0k',  [dimID1,dimID2,dimID3],/float)
+ncdf_control,fileID_z0k,/endef
+ncdf_varput,fileID_z0k,varID1,lon
+ncdf_varput,fileID_z0k,varID2,lat
+ncdf_varput,fileID_z0k,varID3,event_year
+ncdf_varput,fileID_z0k,varID4,event_month
+ncdf_varput,fileID_z0k,varID5,event_day
+ncdf_varput,fileID_z0k,varID9,event_hour
+ncdf_varput,fileID_z0k,varID10,event_z0k
+ncdf_close,fileID_z0k
 
 ; END PROGRAM
 end

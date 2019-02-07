@@ -7,7 +7,7 @@ from pylab import figure
 # What event configuration to look at
 configID    = "Take1"
 res         = 50
-ptile       = '96.00'
+ptile       = '97.00'
 persistence = 24
 modelID     = 'gfdl'
 
