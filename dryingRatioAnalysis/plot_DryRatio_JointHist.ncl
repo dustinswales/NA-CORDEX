@@ -15,8 +15,8 @@ ptile       = "97.00"
 ; Event persistence threshold (hours)
 persistence = 24
 ; Model ID
-modelID = "hadgem"
-configID = "Take1"
+modelID = "mpi"
+configID = "Take4"
 
 ; Input directory
 dirIN = "/data/dswales/NA-CORDEX/ARdet/dryingRatios/"
@@ -53,8 +53,8 @@ dVarRel = where(pdfHist .lt. eps .and. pdfFuture .lt. eps, 0., dVarRel)
 
 ; Plot range
 nLevels  = 20.0
-varRange =(/0,3./)
-dvarRange =(/-2,2/)
+varRange =(/0,5./)
+dvarRange =(/-1,1/)
 dvarRangeRelative = (/-100.,100./)
 dVar     = ((varRange(1)-varRange(0))/nLevels)
 ddVar    = ((dvarRange(1)-dvarRange(0))/nLevels)
