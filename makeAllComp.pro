@@ -12,6 +12,9 @@ dirIN  = '/data/dswales/NA-CORDEX/ARdet/events/'
 models = ['erain','mpi','gfdl','hadgem']
 nmods  = n_elements(models)
 
+; Model resolution
+res = '50'
+
 ; IVT threshold (percentile)
 ivtThresh = [96.00,97.00,98.00,99.00]
 nithresh  = n_elements(ivtThresh)
@@ -25,8 +28,8 @@ for ij=0,nmods-1 do begin
       for il=0,npthresh-1 do begin
          print,'########################################################'
          print,models(ij),ivtThresh(ik),pThresh(il)
-         compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),pThresh(il),0,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
-         if (ij ne 0) then compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),pThresh(il),1,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
+         compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),res,pThresh(il),0
+         if (ij ne 0) then compositeEvents,dirIN,dirOUT,models(ij),ivtThresh(ik),res,pThresh(il),1
       end
    end
 end

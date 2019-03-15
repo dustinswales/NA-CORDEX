@@ -18,7 +18,11 @@
 ; Output is written to netCDF and stored in dirOUT.
 ;
 ; #########################################################################
-pro find_ARs,modelID,persistenceThresh,ivtThresh,yearS,yearF,dirOUT
+pro find_ARs,modelID,persistenceThresh,ivtThresh,yearS,yearF,dirOUT,nevents
+writeOutput=1
+if (strcmp(dirOUT,'')) then begin
+   writeOutput=0
+endif
 
 ; IVT threshold 
 ;ivtThresh=99
@@ -196,7 +200,7 @@ endif
 ; #######################################################################
 ; Write to output
 ; #######################################################################
-if (nevents gt 0) then begin
+if (nevents gt 0 and writeOutput) then begin
    if (strcmp(period,'clim')) then $
       fileOUT = 'events.'+res+'km.'+string(ivtThresh,format='(f5.2)')+'ptile.'+string(persistenceThresh,format='(i2.2)')+'hrs.'+modelID+'.nc'
    if (strcmp(period,'future')) then $

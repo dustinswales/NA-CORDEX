@@ -16,18 +16,7 @@
 ; Output is written to netCDF and stored in dirOUT.
 ;
 ; ######################################################################### 
-pro compositeEvents,dirIN,dirOUT,modelID,ivtThresh,persistenceThresh,future,fileOUT_precip,fileOUT_ivt,fileOUT_z0k
-; Output directory
-; dirOUT = '/data/dswales/NA-CORDEX/ARdet/'
-; IVT threshold (standardized)
-;ivtThresh = 99.
-; How long are AR events? (in hours)
-;persistenceThresh = 24
-; Which RCM
-;modelID='gfdl'
-  
-; 50 or 25km data?
-res = '50'
+pro compositeEvents,dirIN,dirOUT,modelID,ivtThresh,res,persistenceThresh,future
 
 ; WRF data
 expID = 'WRF_'+modelID+'_'+res+'km'
@@ -35,6 +24,14 @@ dir   = '/Projects/HydroMet/dswales/NA-CORDEX/'+expID+'/'
 
 ; For composites, how many hours after event to include?
 lingerTime = 12
+
+; Physical constants
+rv      = 461.50
+rd      = 287.04
+lv      = 2.501e6
+cp      = 1005.0
+cv      = 718.0
+epsilon = rd/rv
 
 ; Read in file containing detected AR events.
 fprefix = 'events.'
@@ -99,10 +96,23 @@ for ij=0,nEvents-1 do begin
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtV,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0k,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),var_temp2,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
+      ncdf_varget,fileID,ncdf_varid(fileID,'PSFC'),sfcP,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Q2m'),q2m,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
+      ncdf_varget,fileID,ncdf_varid(fileID,'T2m'),t2m,offset=[0,0,t0],count=[nlon,nlat,event_length(ij)/3.]
       nt   = n_elements(ivtU(0,0,*))
       rainnc = fltarr(nlon,nlat,nt)
       rainnc(*,*,1:nt-1)=var_temp2(*,*,1:nt-1)-var_temp2(*,*,0:nt-2)
       rainnc(where(rainnc lt 0)) = 0
+
+      ; Compute saturation vapor pressure (es) and vapor pressure (pe)
+      es = 610.94*exp(lv*(1./273.15 - 1./t2m)/rv)
+      pe = sfcP/((epsilon/q2m)+1)
+      pe(where(pe lt 0))=0.0
+      ; Compute dew-point temperature
+      Td = 1./((1./273.15) - (rv/lv)*alog(pe/610.94))
+      ; Compute heigt lifting condensation level
+      zLCL=(t2m-Td)/8.
+      zLCL(where(zLCL lt 0))=0.0
       
       ; Store stuff for plots
       yy = year(t0:t0+event_length(ij)/3-1)
@@ -141,13 +151,28 @@ for ij=0,nEvents-1 do begin
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtVa,offset=[0,0,t0],count=[nlon,nlat,nt0]
       ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0ka,offset=[0,0,t0],count=[nlon,nlat,nt0]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),rainnca,offset=[0,0,t0],count=[nlon,nlat,nt0]
+      ncdf_varget,fileID,ncdf_varid(fileID,'PSFC'),sfcPa,offset=[0,0,t0],count=[nlon,nlat,nt0]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Q2m'),q2ma,offset=[0,0,t0],count=[nlon,nlat,nt0]
+      ncdf_varget,fileID,ncdf_varid(fileID,'T2m'),t2ma,offset=[0,0,t0],count=[nlon,nlat,nt0]
+      
       nt   = n_elements(ivtUa(0,0,*))
       var_temp2a = fltarr(nlon,nlat,nt)
       if (nt gt 1) then begin
          var_temp2a(*,*,1:nt-1)=rainnca(*,*,1:nt-1)-rainnca(*,*,0:nt-2)
          var_temp2a(where(var_temp2a lt 0)) = 0
       endif
-         
+
+      ; Compute saturation vapor pressure (es) and vapor pressure (pe)
+      es = 610.94*exp(lv*(1./273.15 - 1./t2ma)/rv)
+      pe = sfcPa/((epsilon/q2ma)+1)
+      pe(where(pe lt 0))=0.0
+      ; Compute dew-point temperature
+      Td = 1./((1./273.15) - (rv/lv)*alog(pe/610.94))
+      ; Compute heigt lifting condensation level
+      zLCLa=(t2ma-Td)/8.
+      zLCLa(where(zLCLa lt 0))=0.0
+
+      
       yya = year(t0:t0+nt0-1)
       mma = month(t0:t0+nt0-1)
       dda = day(t0:t0+nt0-1)
@@ -167,6 +192,10 @@ for ij=0,nEvents-1 do begin
       ncdf_varget,fileID,ncdf_varid(fileID,'IVTV'),ivtVb,count=[nlon,nlat,nt1]
       ncdf_varget,fileID,ncdf_varid(fileID,'Z0K'),z0kb,count=[nlon,nlat,nt1]
       ncdf_varget,fileID,ncdf_varid(fileID,'RAINNC'),rainncb,count=[nlon,nlat,nt1]
+      ncdf_varget,fileID,ncdf_varid(fileID,'PSFC'),sfcPb,count=[nlon,nlat,nt1]
+      ncdf_varget,fileID,ncdf_varid(fileID,'Q2m'),q2mb,count=[nlon,nlat,nt1]
+      ncdf_varget,fileID,ncdf_varid(fileID,'T2m'),t2mb,count=[nlon,nlat,nt1]
+      
       nt   = n_elements(ivtUb(0,0,*))
       var_temp2b = fltarr(nlon,nlat,nt)
       var_temp2b(*,*,1:nt-1)=rainncB(*,*,1:nt-1)-rainncB(*,*,0:nt-2)
@@ -176,10 +205,21 @@ for ij=0,nEvents-1 do begin
       ddb = day(0:nt1-1)
       hhb = hour(0:nt1-1)
 
+      ; Compute saturation vapor pressure (es) and vapor pressure (pe)
+      es = 610.94*exp(lv*(1./273.15 - 1./t2mb)/rv)
+      pe = sfcPb/((epsilon/q2mb)+1)
+      pe(where(pe lt 0))=0.0
+      ; Compute dew-point temperature
+      Td = 1./((1./273.15) - (rv/lv)*alog(pe/610.94))
+      ; Compute heigt lifting condensation level
+      zLCLb=(t2mb-Td)/8.
+      zLCLb(where(zLCLb lt 0))=0.0
+      
       ; Close file 2
       ncdf_close,fileID
 
       ; Combine
+      zLCL = [[[zLCLa]],[[zLCLb]]]
       ivtU = [[[ivtUa]],[[ivtUb]]]
       ivtV = [[[ivtVa]],[[ivtVb]]]
       z0k = [[[z0ka]],[[z0kb]]]
@@ -201,6 +241,7 @@ for ij=0,nEvents-1 do begin
       event_ivtU   = ivtU
       event_ivtV   = ivtV
       event_z0k    = z0k
+      event_zLCL   = zLCL
    endif
    if (not init) then begin
       event_hour   = [event_hour, hh]
@@ -211,6 +252,7 @@ for ij=0,nEvents-1 do begin
       event_ivtU   = [[[event_ivtU]],[[ivtU]]]
       event_ivtV   = [[[event_ivtV]],[[ivtV]]]
       event_z0k    = [[[event_z0k]],[[z0k]]]
+      event_zLCL   = [[[event_zLCL]],[[zLCL]]]
    endif
    init = 0
 
@@ -227,6 +269,7 @@ print,'Writing to output...'
 fileOUT_precip = 'composite.raw.precip.'+fileIN
 fileOUT_ivt    = 'composite.raw.ivt.'+fileIN
 fileOUT_z0k    = 'composite.raw.z0k.'+fileIN
+fileOUT_zLCL   = 'composite.raw.zLCL.'+fileIN
 ; Precip file
 fileID_precip  = ncdf_create(dirOUT+fileOUT_precip,/clobber)
 dimID1  = ncdf_dimdef(fileID_precip,'lon',nlon)
@@ -290,6 +333,27 @@ ncdf_varput,fileID_z0k,varID5,event_day
 ncdf_varput,fileID_z0k,varID9,event_hour
 ncdf_varput,fileID_z0k,varID10,event_z0k
 ncdf_close,fileID_z0k
+; zLCL file
+fileID_zLCL  = ncdf_create(dirOUT+fileOUT_zLCL,/clobber)
+dimID1  = ncdf_dimdef(fileID_zLCL,'lon',nlon)
+dimID2  = ncdf_dimdef(fileID_zLCL,'lat',nlat)
+dimID3  = ncdf_dimdef(fileID_zLCL,'ntime',n_elements(event_day))
+varID1  = ncdf_vardef(fileID_zLCL,'lon',  [dimID1,dimID2       ],/float)
+varID2  = ncdf_vardef(fileID_zLCL,'lat',  [dimID1,dimID2       ],/float)
+varID3  = ncdf_vardef(fileID_zLCL,'year', [              dimID3],/long)
+varID4  = ncdf_vardef(fileID_zLCL,'month',[              dimID3],/long)
+varID5  = ncdf_vardef(fileID_zLCL,'day',  [              dimID3],/long)
+varID9  = ncdf_vardef(fileID_zLCL,'hour', [              dimID3],/long)
+varID10 = ncdf_vardef(fileID_zLCL,'zLCL', [dimID1,dimID2,dimID3],/float)
+ncdf_control,fileID_zLCL,/endef
+ncdf_varput,fileID_zLCL,varID1,lon
+ncdf_varput,fileID_zLCL,varID2,lat
+ncdf_varput,fileID_zLCL,varID3,event_year
+ncdf_varput,fileID_zLCL,varID4,event_month
+ncdf_varput,fileID_zLCL,varID5,event_day
+ncdf_varput,fileID_zLCL,varID9,event_hour
+ncdf_varput,fileID_zLCL,varID10,event_zLCL
+ncdf_close,fileID_zLCL
 
 ; END PROGRAM
 end
