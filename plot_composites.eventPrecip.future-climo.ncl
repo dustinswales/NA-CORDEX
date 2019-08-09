@@ -8,7 +8,7 @@
 begin
 
 ; Which RCM?
-modelID = (/"hadgem","mpi","gfdl"/)
+modelID = (/"erain","hadgem","mpi","gfdl"/)
 nmods   = dimsizes(modelID)
 
 ; Extreme parameters
@@ -28,14 +28,12 @@ dirOUT = "/home/dswales/Projects/NA-CORDEX/scripts/ARdet/plots/composites/"
 ; #########################################################################
 wks_type = "png"
 varName  = "precip"
-varRangeCumPrecip = (/0.,400./)
 varRangedPrecip   = (/-100.,100./)                
 ctable   = "NCV_bright"
 units    = "mm"
 
 ; Variable spacing.
 nLevels       = 40.0
-dVarCumPrecip = ((varRangeCumPrecip(1)-varRangeCumPrecip(0))/nLevels)
 dVardPrecip   = ((varRangedPrecip(1)-varRangedPrecip(0))/nLevels)
 
 ; Load colortables for plots
@@ -65,7 +63,7 @@ res@mpOutlineBoundarySets   = "GeophysicalAndUSStates" ; Plot boundary set
 res@gsnPaperOrientation     = "landscape"              ; orientation
 res@mpMaxLatF               = 75.                      ; specify the plot domain
 res@mpMinLatF               = 5.                      ;                         
-res@mpMinLonF               = 200.                     ;
+res@mpMinLonF               = 205.                     ;
 res@mpMaxLonF               = 270.                     ;
 res@mpCenterLonF            = 235.                     ;
 res@cnMissingValFillPattern = 17                       ; set the missing value fill pattern to 17
@@ -124,6 +122,11 @@ do ij=0,nmods-1
    dprecip_total   = precip_total_future    - precip_total_hist
    dprecip_event   = precip_event_future    - precip_event_hist
    dprecip_noevent = precip_nonevent_future - precip_nonevent_hist
+   if (ij .eq. 0) then
+      dprecip_total   = 0
+      dprecip_event   = 0
+      dprecip_noevent = 0
+   end if
    
    ; ##########################################
    ; Add attributes
@@ -164,21 +167,9 @@ end do
 ; #########################################################################
 ; Make panel plot (1 upper row, 2 lower rows)
 ; #########################################################################
-; Upper panel configuration
-res_U                   = True
-res_U@gsnFrame          = False
-res_U@gsnPanelTop       = 0.9999
-res_U@gsnPanelBottom    = 0.60
-res_U@gsnPanelLabelBar  = False
-res_U@lbTitleString     = "(mm)"
-res_U@lbTitleFontHeightF= .01 
-res_U@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a tad
-
-; Lower panel configuration
+; Panel configuration
 res_L                   = True
 res_L@gsnFrame          = False
-;res_L@gsnPanelTop       = 0.60
-;res_L@gsnPanelBottom    = 0.1
 res_L@gsnPanelLabelBar  = True
 res_L@lbTitleString     = "Precipitation (mm)"
 res_L@lbTitleFontHeightF= .01

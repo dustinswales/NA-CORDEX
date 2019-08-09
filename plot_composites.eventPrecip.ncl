@@ -12,7 +12,7 @@ modelID = (/"erain","hadgem","mpi","gfdl"/)
 nmods   = dimsizes(modelID)
 
 ; Switch for future epoch composites
-future=01
+future=0
 
 ; Extreme parameters
 ptile       = (/"97.00","95.00"/)
@@ -31,7 +31,7 @@ dirOUT = "/home/dswales/Projects/NA-CORDEX/scripts/ARdet/plots/composites/"
 ; #########################################################################
 wks_type = "png"
 varName  = "precip"
-varRangeCumPrecip = (/40.,400./)                 
+varRangeCumPrecip = (/10.,400./)                 
 varRangeFrac = (/0.,1./)                    
 varRangedFrac = (/-0.3,0.3/)                    
 ctable   = "NCV_bright"
@@ -96,20 +96,17 @@ do ip2=0,np2-1
 ; #########################################################################
 ; Loop over all models and create plots.
 ; #########################################################################
-plot1    = new(nmods,graphic)
-plot2    = new(nmods*2,graphic)
+plot    = new(nmods*3,graphic)
 if (future .eq. 0) then
    fileOUT = dirOUT+"composite."+varName+".events.historical.MultiModel."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile"+".v3"
-   modstart = 0
 end if
 if (future .eq. 1) then
    fileOUT = dirOUT+"composite."+varName+".events.future.MultiModel."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile"+".v3"
-   modstart=1
 end if
 print(fileOUT+"."+wks_type)
 
 wks     = gsn_open_wks(wks_type,fileOUT); send graphics to PNG file
-do ij=modstart,nmods-1
+do ij=0,nmods-1
    ; ##########################################   
    ; Read in data
    ; ##########################################
@@ -172,46 +169,38 @@ do ij=modstart,nmods-1
    resC@gsnCenterString   = ""
    if (future .eq. 0) then
       resC@tiMainString= modelID(ij)
-      plot1(ij)        = gsn_csm_contour_map(wks,precip_total_hist,resC)
-      plot2(ij)        = gsn_csm_contour_map(wks,precip_event_hist,resC)
+      plot(ij)          = gsn_csm_contour_map(wks,precip_total_hist,resC)
+      plot(ij+nmods)    = gsn_csm_contour_map(wks,precip_event_hist,resC)
       resC@tmXBLabelsOn = True
-      plot2(ij+nmods)  = gsn_csm_contour_map(wks,precip_nonevent_hist,resC)
+      plot(ij+nmods*2)  = gsn_csm_contour_map(wks,precip_nonevent_hist,resC)
    end if
    if (future .eq. 1) then
+      if (ij .eq. 0) then
+      	 precip_total_future    = 0
+	 precip_event_future    = 0
+	 precip_nonevent_future = 0
+      end if 
       resC@tiMainString= modelID(ij)
-      plot1(ij)        = gsn_csm_contour_map(wks,precip_total_future,resC)
-      plot2(ij)        = gsn_csm_contour_map(wks,precip_event_future,resC)
+      plot(ij)          = gsn_csm_contour_map(wks,precip_total_future,resC)
+      plot(ij+nmods)    = gsn_csm_contour_map(wks,precip_event_future,resC)
       resC@tmXBLabelsOn = True
-      plot2(ij+nmods)  = gsn_csm_contour_map(wks,precip_nonevent_future,resC)
+      plot(ij+nmods*2)  = gsn_csm_contour_map(wks,precip_nonevent_future,resC)
    end if
 end do
 
 ; #########################################################################
 ; Make panel plot (1 upper row, 2 lower rows)
 ; #########################################################################
-; Upper panel configuration
-res_U                   = True
-res_U@gsnFrame          = False
-res_U@gsnPanelTop       = 0.9999
-res_U@gsnPanelBottom    = 0.60
-res_U@gsnPanelLabelBar  = False
-res_U@lbTitleString     = "(mm/month)"
-res_U@lbTitleFontHeightF= .01 
-res_U@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a tad
-
-; Lower panel configuration
+; Panel configuration
 res_L                   = True
 res_L@gsnFrame          = False
-res_L@gsnPanelTop       = 0.60
-res_L@gsnPanelBottom    = 0.1
 res_L@gsnPanelLabelBar  = True
 res_L@lbTitleString     = "Precipitation (mm/month)"
 res_L@lbTitleFontHeightF= .01
 res_L@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a tad
 
 ; Panel upper and lower
-gsn_panel(wks,plot1,(/1,nmods/),res_U)
-gsn_panel(wks,plot2,(/2,nmods/),res_L)
+gsn_panel(wks,plot,(/3,nmods/),res_L)
 frame(wks)
 
 
