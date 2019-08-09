@@ -96,7 +96,7 @@ lat_dnstream  = [i for i in np.arange(y0, yF, ((yF-y0)/(nDRs)))]
 dir = '/data/dswales/NA-CORDEX/ARdet/composites/'
 
 for imod in range(0,nmodels):
-    print modelID[imod]
+    print(modelID[imod])
     for ip in range(0,nps):
         # Where to output results?
         fileOUT = dirOUT+"dryingRatios."+configID+"."+str(res)+'km.'+ptile[ip]+'ptile.'+str(persistence)+'hrs.'+modelID[imod]+".nc"

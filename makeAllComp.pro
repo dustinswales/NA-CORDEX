@@ -15,11 +15,11 @@ nmods  = n_elements(models)
 ; Model resolution
 res = '50'
 
-; IVT threshold (percentile)
-ivtThresh = [96.00,97.00,98.00,99.00]
+; IVT threshold(s) (percentile)
+ivtThresh = [95.00,96.00,97.00,98.00,99.00]
 nithresh  = n_elements(ivtThresh)
 
-; Persistence threshold
+; Persistence threshold(s) (hours)
 pthresh  = [24,36]
 npthresh = n_elements(pthresh)
 
