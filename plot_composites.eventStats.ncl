@@ -100,16 +100,14 @@ plot1    = new(nmods,graphic)
 plot2    = new(nmods*2,graphic)
 if (future .eq. 0) then
    fileOUT = dirOUT+"composite.eventStats.historical.MultiModel."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile"
-   modstart = 0
 end if
 if (future .eq. 1) then
    fileOUT = dirOUT+"composite.eventStats.future.MultiModel."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile"
-   modstart=1
 end if
 print(fileOUT+"."+wks_type)
 
 wks     = gsn_open_wks(wks_type,fileOUT); send graphics to PNG file
-do ij=modstart,nmods-1
+do ij=0,nmods-1
    ; ##########################################   
    ; Read in data
    ; ##########################################
@@ -186,6 +184,11 @@ do ij=modstart,nmods-1
       plot2(ij+nmods)  = gsn_csm_contour_map(wks,precip_eventfrac_hist,res)
    end if
    if (future .eq. 1) then
+      if (ij .eq. 0) then
+         precip_total_future = 0
+         event_frac_future   = 0
+         precip_eventfrac_future = 0
+      end if
       resC@tiMainString= modelID(ij)
       plot1(ij)        = gsn_csm_contour_map(wks,precip_total_future,resC)
       plot2(ij)        = gsn_csm_contour_map(wks,event_frac_future,res)

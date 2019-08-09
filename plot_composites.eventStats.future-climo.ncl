@@ -8,7 +8,7 @@
 begin
 
 ; Which RCM?
-modelID = (/"hadgem","mpi","gfdl"/)
+modelID = (/"erain","hadgem","mpi","gfdl"/)
 nmods   = dimsizes(modelID)
 ; Extreme parameters
 ptile       = (/"97.00","95.00"/)
@@ -149,7 +149,13 @@ do ij=0,nmods-1
    dExtremeFrac = 100.*(precip_eventfrac_future - precip_eventfrac_hist)
    dExtremeFrac@lat2d = lat
    dExtremeFrac@lon2d = lon
-   dEventFrac@units   = " "   
+   dEventFrac@units   = " "
+
+   if (ij .eq. 0) then
+      dTotalPrecip = 0
+      dEventFrac   = 0
+      dExtremeFrac = 0
+   end if
 
    ; ##########################################
    ; Make plots
@@ -162,7 +168,7 @@ do ij=0,nmods-1
       resD@tmYLLabelsOn = True
       resC@tmYLLabelsOn = True
    end if
-   resC@gsnCenterString   = modelID(ij)
+   resC@tiMainString   = modelID(ij)
    plot1(ij)        = gsn_csm_contour_map(wks,dTotalPrecip,resC)
    plot2(ij)        = gsn_csm_contour_map(wks,dEventFrac,resD)
    resD@tmXBLabelsOn = True
@@ -176,8 +182,8 @@ end do
 ; Upper panel configuration
 res_U                   = True
 res_U@gsnFrame          = False
-res_U@gsnPanelTop       = 0.95
-res_U@gsnPanelBottom    = 0.63
+res_U@gsnPanelTop       = 0.999
+res_U@gsnPanelBottom    = 0.60
 res_U@gsnPanelLabelBar  = True
 res_U@lbTitleString     = "(mm/month)"
 res_U@lbTitleFontHeightF= .01 
@@ -187,7 +193,7 @@ res_U@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a t
 res_L                   = True
 res_L@gsnFrame          = False
 res_L@gsnPanelTop       = 0.60
-res_L@gsnPanelBottom    = 0.05
+res_L@gsnPanelBottom    = 0.1
 res_L@gsnPanelLabelBar  = True
 res_L@lbTitleString     = "Frequency (%)"
 res_L@lbTitleFontHeightF= .01
