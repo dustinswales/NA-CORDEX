@@ -7,14 +7,20 @@
 ; #########################################################################
 begin
 
+; Which variable to plot? Precip is default
+doPrecip = 0
+doIVT    = 01
+
 ; Which RCM?
-modelID = (/"erain","hadgem","mpi","gfdl"/)
+modelID = (/"erain","hadgem","gfdl","mpi"/)
 nmods   = dimsizes(modelID)
 
 ; Extreme parameters
-ptile       = (/"97.00","95.00"/)
+;ptile       = (/"95.00","97.00"/)
+ptile = "95.00"
 np1 = dimsizes(ptile)
-persistence = (/"24","36"/)
+;persistence = (/"24","36"/)
+persistence = "24"
 np2 = dimsizes(persistence)
 
 ; Composite location
@@ -27,14 +33,23 @@ dirOUT = "/home/dswales/Projects/NA-CORDEX/scripts/ARdet/plots/composites/"
 ; Plot configuration
 ; #########################################################################
 wks_type = "png"
-varName  = "precip"
-varRangedPrecip   = (/-100.,100./)                
-ctable   = "NCV_bright"
-units    = "mm"
+nLevels  = 40.0
+
+if (doPrecip .eq. 1) then
+   varName  = "precip"	
+   varRange   = (/-10.,10./)                
+   ctable   = "NCV_bright"
+   units    = "mm"
+end if
+if (doIVT .eq. 1) then
+   varName  = "ivt"
+   varRange = (/-200.,200./)                       
+   ctable   = "NCV_bright"
+   units    = "Kg/m/s"
+end if
 
 ; Variable spacing.
-nLevels       = 40.0
-dVardPrecip   = ((varRangedPrecip(1)-varRangedPrecip(0))/nLevels)
+dVardPrecip   = ((varRange(1)-varRange(0))/nLevels)
 
 ; Load colortables for plots
 ctableD      = "NCV_blue_red"
@@ -73,8 +88,8 @@ res@tmYLLabelFontHeightF    = 0.015		       ;
 ; Load variable specific configuration
 resD                        = res
 resD@cnFillPalette          = cmapD                    ; divergent colormap
-resD@cnMinLevelValF         = varRangedPrecip(0)       ; Lower range
-resD@cnMaxLevelValF         = varRangedPrecip(1)       ; Uppermost level
+resD@cnMinLevelValF         = varRange(0)       ; Lower range
+resD@cnMaxLevelValF         = varRange(1)       ; Uppermost level
 resD@cnLevelSpacingF        = dVardPrecip              ; level spacing
 
 ; Loop over all thresholds
@@ -89,7 +104,7 @@ fileOUT = dirOUT+"composite."+varName+".events.future-historical.MultiModel."+pe
 print(fileOUT+"."+wks_type)
 
 wks     = gsn_open_wks(wks_type,fileOUT); send graphics to PNG file
-do ij=0,nmods-1
+do ij=1,nmods-1
    ; ##########################################   
    ; Read in data
    ; ##########################################
@@ -97,51 +112,95 @@ do ij=0,nmods-1
    fileID = addfile(fileIN,"r")
    lon                   = fileID->lon(5:,5:)
    lat                   = fileID->lat(5:,5:)
-   precip_total_hist     = fileID->total_precip_hist(5:,5:)
-   precip_event_hist     = fileID->event_precip_hist(5:,5:)
-   precip_total_future   = fileID->total_precip_future(5:,5:)
-   precip_event_future   = fileID->event_precip_future(5:,5:)
-   
-   ; ##########################################
-   ; Display precipitation totals as mean monthly values
-   ; ##########################################
-   precip_total_hist   = precip_total_hist/(31.*6.)	
-   precip_event_hist   = precip_event_hist/(31.*6.)
-   precip_total_future = precip_total_future/(31.*6.)	
-   precip_event_future = precip_event_future/(31.*6.)	
-
-   ; ##########################################
-   ; Compute non-event precipitation
-   ; ##########################################
-   precip_nonevent_hist   = precip_total_hist   - precip_event_hist
-   precip_nonevent_future = precip_total_future - precip_event_future
+   nTime_event_hist      = fileID->ntime_event_hist
+   nTime_hist            = fileID->ntime_hist
+   nTime_event_future    = fileID->ntime_event_future
+   nTime_future          = fileID->ntime_future
+   if (doPrecip .eq. 1) then
+      precip_total_hist     = fileID->total_precip_hist(5::,5::)
+      precip_event_hist     = fileID->event_precip_hist(5::,5::)
+      precip_nonevent_hist  = fileID->nevent_precip_hist(5::,5::)
+      precip_total_future   = fileID->total_precip_future(5::,5::)
+      precip_event_future   = fileID->event_precip_future(5::,5::)
+      precip_nonevent_future= fileID->nevent_precip_future(5::,5::)
+      
+      ; Display precipitation totals as daily values
+      precip_total_hist      = precip_total_hist*8.
+      precip_event_hist      = precip_event_hist*8.
+      precip_nonevent_hist   = precip_nonevent_hist*8.
+      precip_total_future    = precip_total_future*8.
+      precip_event_future    = precip_event_future*8.
+      precip_nonevent_future = precip_nonevent_future*8.
+   end if
+   if (doIVT .eq. 1) then
+      ivt_total_hist       = fileID->total_ivt_hist(5::,5::)
+      ivt_event_hist       = fileID->event_ivt_hist(5::,5::)
+      ivt_nonevent_hist    = fileID->nevent_ivt_hist(5::,5::)
+      ivt_total_future     = fileID->total_ivt_future(5::,5::)
+      ivt_event_future     = fileID->event_ivt_future(5::,5::)
+      ivt_nonevent_future  = fileID->nevent_ivt_future(5::,5::)
+   end if
 
    ; ##########################################
    ; Compute future-historical
    ; ##########################################
-   dprecip_total   = precip_total_future    - precip_total_hist
-   dprecip_event   = precip_event_future    - precip_event_hist
-   dprecip_noevent = precip_nonevent_future - precip_nonevent_hist
-   if (ij .eq. 0) then
-      dprecip_total   = 0
-      dprecip_event   = 0
-      dprecip_noevent = 0
-   end if
+   if (doPrecip .eq. 1) then
+      dprecip_total   = precip_total_future    - precip_total_hist
+      dprecip_event   = precip_event_future    - precip_event_hist
+      dprecip_noevent = precip_nonevent_future - precip_nonevent_hist
+      if (ij .eq. 0) then
+      	 dprecip_total   = 0
+      	 dprecip_event   = 0
+      	 dprecip_noevent = 0
+       end if
    
-   ; ##########################################
-   ; Add attributes
-   ; ##########################################
-   dprecip_total@lat2d = lat
-   dprecip_total@lon2d = lon
-   dprecip_total@units = " "
+       ; Add attributes
+       dprecip_total@lat2d = lat
+       dprecip_total@lon2d = lon
+       dprecip_total@units = " "
+       ;
+       dprecip_event@lat2d = lat
+       dprecip_event@lon2d = lon
+       dprecip_event@units = " "
+       ;
+       dprecip_noevent@lat2d = lat
+       dprecip_noevent@lon2d = lon
+       dprecip_noevent@units = " "
+
+       ;
+       dVar_total   = dprecip_total
+       dVar_event   = dprecip_event
+       dVar_noevent = dprecip_noevent
+   end if
    ;
-   dprecip_event@lat2d = lat
-   dprecip_event@lon2d = lon
-   dprecip_event@units = " "
-   ;
-   dprecip_noevent@lat2d = lat
-   dprecip_noevent@lon2d = lon
-   dprecip_noevent@units = " "
+   if (doIVT .eq. 1) then
+      divt_total   = ivt_total_future    - ivt_total_hist
+      divt_event   = ivt_event_future    - ivt_event_hist
+      divt_noevent = ivt_nonevent_future - ivt_nonevent_hist
+      if (ij .eq. 0) then
+      	 divt_total   = 0
+      	 divt_event   = 0
+      	 divt_noevent = 0
+       end if
+   
+       ; Add attributes
+       divt_total@lat2d = lat
+       divt_total@lon2d = lon
+       divt_total@units = " "
+       ;
+       divt_event@lat2d = lat
+       divt_event@lon2d = lon
+       divt_event@units = " "
+       ;
+       divt_noevent@lat2d = lat
+       divt_noevent@lon2d = lon
+       divt_noevent@units = " "
+
+       ;
+       dVar_total   = divt_total
+       dVar_event   = divt_event
+       dVar_noevent = divt_noevent
+   end if
 
    ; ##########################################
    ; Make plots
@@ -155,13 +214,14 @@ do ij=0,nmods-1
       resD@tmYLLabelsOn = True
       resD@tmYLLabelsOn = True
    end if
-   resD@tiMainString = modelID(ij)
-   plot(ij)         = gsn_csm_contour_map(wks,dprecip_total,resD)
+   resD@tiMainString = "Cummulative ("+modelID(ij)+")"
+   plot(ij)         = gsn_csm_contour_map(wks,dVar_total,resD)
    resD@tiMainString = ""
-   plot(ij+nmods)   = gsn_csm_contour_map(wks,dprecip_event,resD)
+   resD@tiMainString = "Event-Days ("+modelID(ij)+")"
+   plot(ij+nmods)   = gsn_csm_contour_map(wks,dVar_event,resD)
    resD@tmXBLabelsOn = True
-   plot(ij+nmods*2) = gsn_csm_contour_map(wks,dprecip_noevent,resD)
- 
+   resD@tiMainString = "non-Event Days ("+modelID(ij)+")"
+   plot(ij+nmods*2) = gsn_csm_contour_map(wks,dVar_noevent,resD)
 end do
 
 ; #########################################################################
@@ -171,7 +231,12 @@ end do
 res_L                   = True
 res_L@gsnFrame          = False
 res_L@gsnPanelLabelBar  = True
-res_L@lbTitleString     = "Precipitation (mm)"
+if (doPrecip .eq. 1) then
+   res_L@lbTitleString     = "Precipitation (mm/day)"
+end if
+if (doIVT .eq. 1) then
+   res_L@lbTitleString     = "IVT (kg/m/s)"
+end if
 res_L@lbTitleFontHeightF= .01
 res_L@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a tad
 
