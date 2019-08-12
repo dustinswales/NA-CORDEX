@@ -8,8 +8,8 @@
 begin
 
 ; Which variable to plot? Precip is default
-doPrecip = 0
-doIVT  = 01
+doPrecip = 01
+doIVT  = 0
 doZ500 = 0
 doZLCL = 0
 doSWE  = 0
