@@ -71,7 +71,7 @@ for imod=0,nmod-1 do begin
       test3 = where(ivt gt 2000)
       if (test3(0) ne -1) then ivt(test3)=0
       test4 = where(ivtf gt 2000)
-      if (test4(0) ne -1) then ivtf(test3)=0
+      if (test4(0) ne -1) then ivtf(test4)=0
    endif
    ;
    if (doZLCL) then begin
@@ -255,7 +255,7 @@ for imod=0,nmod-1 do begin
             ncdf_varget,fileID_z500,ncdf_varid(fileID_z500,'z500'), event_z500_future
             ncdf_close,fileID_z500
          endif
-
+         
          ; Composites over entire time period(s)
          ntime_hist   = n_elements(rainnc(0,0,*))
          ntime_future = n_elements(rainncf(0,0,*))
@@ -271,16 +271,16 @@ for imod=0,nmod-1 do begin
          zLCL_future   = total(zLCLf,3)   / ntime_future
 
          ; Composites for non-event times
-         nevent_precip_hist   = (total(rainnc,3)  - total(event_precip_hist,3))/  (ntime_hist  )
-         nevent_precip_future = (total(rainncf,3) - total(event_precip_future,3))/(ntime_future)
-         nevent_ivt_hist      = (total(ivt,3)     - total(event_ivt_hist,3))/     (ntime_hist  )
-         nevent_ivt_future    = (total(ivtf,3)    - total(event_ivt_future,3))/   (ntime_future)
-         nevent_swe_hist      = (total(swe,3)     - total(event_swe_hist,3))/     (ntime_hist  )
-         nevent_swe_future    = (total(swef,3)    - total(event_swe_future,3))/   (ntime_future)
-         nevent_z500_hist     = (total(z500,3)    - total(event_z500_hist,3))/    (ntime_hist  )
-         nevent_z500_future   = (total(z500f,3)   - total(event_z500_future,3))/  (ntime_future)
-         nevent_zLCL_hist     = (total(zLCL,3)    - total(event_zLCL_hist,3))/    (ntime_hist  )
-         nevent_zLCL_future   = (total(zLCLf,3)   - total(event_zLCL_future,3))/  (ntime_future)
+         nevent_precip_hist   = (total(rainnc,3)  - total(event_precip_hist,3))/  (ntime_hist   - ntime_event_hist   )
+         nevent_precip_future = (total(rainncf,3) - total(event_precip_future,3))/(ntime_future - ntime_event_future )
+         nevent_ivt_hist      = (total(ivt,3)     - total(event_ivt_hist,3))/     (ntime_hist   - ntime_event_hist   )
+         nevent_ivt_future    = (total(ivtf,3)    - total(event_ivt_future,3))/   (ntime_future - ntime_event_future )
+         nevent_swe_hist      = (total(swe,3)     - total(event_swe_hist,3))/     (ntime_hist   - ntime_event_hist   )
+         nevent_swe_future    = (total(swef,3)    - total(event_swe_future,3))/   (ntime_future - ntime_event_future )
+         nevent_z500_hist     = (total(z500,3)    - total(event_z500_hist,3))/    (ntime_hist   - ntime_event_hist   )
+         nevent_z500_future   = (total(z500f,3)   - total(event_z500_future,3))/  (ntime_future - ntime_event_future )
+         nevent_zLCL_hist     = (total(zLCL,3)    - total(event_zLCL_hist,3))/    (ntime_hist   - ntime_event_hist   )
+         nevent_zLCL_future   = (total(zLCLf,3)   - total(event_zLCL_future,3))/  (ntime_future - ntime_event_future )
          
          ; Write output
          print,'Writing to output...'

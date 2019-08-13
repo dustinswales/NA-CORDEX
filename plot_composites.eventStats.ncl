@@ -111,7 +111,7 @@ do ij=0,nmods-1
    ; ##########################################   
    ; Read in data
    ; ##########################################
-   fileIN = dirIN+"composite.frequency."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile."+modelID(ij)+".nc"
+   fileIN = dirIN+"composite.frequency.eventStats."+persistence(ip2)+"hrs."+ptile(ip1)+"ptile."+modelID(ij)+".nc"
    fileID = addfile(fileIN,"r")
    lon                     = fileID->lon(5::,5::)
    lat                     = fileID->lat(5::,5::)

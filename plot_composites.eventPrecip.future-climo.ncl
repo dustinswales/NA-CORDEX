@@ -9,10 +9,13 @@ begin
 
 ; Which variable to plot? Precip is default
 doPrecip = 0
-doIVT    = 01
+doIVT    = 0
+doZ500   = 0
+doSWE    = 1
 
 ; Which RCM?
-modelID = (/"erain","hadgem","gfdl","mpi"/)
+;modelID = (/"erain","hadgem","gfdl","mpi"/)
+modelID = (/"erain","hadgem"/)
 nmods   = dimsizes(modelID)
 
 ; Extreme parameters
@@ -37,29 +40,42 @@ nLevels  = 40.0
 
 if (doPrecip .eq. 1) then
    varName  = "precip"	
-   varRange   = (/-10.,10./)                
-   ctable   = "NCV_bright"
+   varRange = (/-50.,50./)                
    units    = "mm"
+   ctable   = "NCV_blue_red"
 end if
 if (doIVT .eq. 1) then
    varName  = "ivt"
-   varRange = (/-200.,200./)                       
-   ctable   = "NCV_bright"
+   varRange = (/10.,100./)                       
    units    = "Kg/m/s"
+;   ctable   = "NCV_bright"
+   ctable   = "CBR_wet"
+end if
+;
+if (doZ500 .eq. 1) then
+   varName  = "z500"
+   varRange = (/50,200/)                       
+   units    = "m"
+   ctable   = "NCV_bright"
+end if
+;
+if (doSWE .eq. 1) then
+   varName  = "SWE"
+   varRange = (/-15,15/)                       
+   ctable   = "NCV_blue_red"
+   units    = "cm"
 end if
 
 ; Variable spacing.
 dVardPrecip   = ((varRange(1)-varRange(0))/nLevels)
 
 ; Load colortables for plots
-ctableD      = "NCV_blue_red"
-ctable       = "NCV_bright"
 cmap      = read_colormap_file(ctable)
-cmap(0,:) = namedcolor2rgba("white")
+;cmap(0,:) = namedcolor2rgba("white")
 ncmap     = dimsizes(cmap(:,0))                      ; # colors
-cmapD     = read_colormap_file(ctableD)
-cmapD     = cmapD(::-1,:) 
-ncmapD    = dimsizes(cmapD(:,0))                      ; # colors
+if (doPrecip .eq. 1) then
+   cmap      = cmap(::-1,:)
+end if
 
 ; Configuration for plot.
 res                         = True
@@ -77,7 +93,7 @@ res@cnLevelSelectionMode    = "ManualLevels"           ; Manually set levels
 res@mpOutlineBoundarySets   = "GeophysicalAndUSStates" ; Plot boundary set
 res@gsnPaperOrientation     = "landscape"              ; orientation
 res@mpMaxLatF               = 75.                      ; specify the plot domain
-res@mpMinLatF               = 5.                      ;                         
+res@mpMinLatF               = 5.                       ;                         
 res@mpMinLonF               = 205.                     ;
 res@mpMaxLonF               = 270.                     ;
 res@mpCenterLonF            = 235.                     ;
@@ -87,9 +103,9 @@ res@tmYLLabelFontHeightF    = 0.015		       ;
 
 ; Load variable specific configuration
 resD                        = res
-resD@cnFillPalette          = cmapD                    ; divergent colormap
-resD@cnMinLevelValF         = varRange(0)       ; Lower range
-resD@cnMaxLevelValF         = varRange(1)       ; Uppermost level
+resD@cnFillPalette          = cmap                     ; divergent colormap
+resD@cnMinLevelValF         = varRange(0)              ; Lower range
+resD@cnMaxLevelValF         = varRange(1)              ; Uppermost level
 resD@cnLevelSpacingF        = dVardPrecip              ; level spacing
 
 ; Loop over all thresholds
@@ -104,7 +120,7 @@ fileOUT = dirOUT+"composite."+varName+".events.future-historical.MultiModel."+pe
 print(fileOUT+"."+wks_type)
 
 wks     = gsn_open_wks(wks_type,fileOUT); send graphics to PNG file
-do ij=1,nmods-1
+do ij=0,nmods-1
    ; ##########################################   
    ; Read in data
    ; ##########################################
@@ -124,13 +140,36 @@ do ij=1,nmods-1
       precip_event_future   = fileID->event_precip_future(5::,5::)
       precip_nonevent_future= fileID->nevent_precip_future(5::,5::)
       
-      ; Display precipitation totals as daily values
-      precip_total_hist      = precip_total_hist*8.
-      precip_event_hist      = precip_event_hist*8.
-      precip_nonevent_hist   = precip_nonevent_hist*8.
-      precip_total_future    = precip_total_future*8.
-      precip_event_future    = precip_event_future*8.
-      precip_nonevent_future = precip_nonevent_future*8.
+      ; Display precipitation totals as monthly mean values
+      precip_total_hist  = precip_total_hist*nTime_hist(0)	/ (8.*30.) ; Express as mean monthly totals
+      precip_total_hist@lat2d = lat
+      precip_total_hist@lon2d = lon
+      precip_total_hist@units = " "
+      ;
+      precip_event_hist  = precip_event_hist*nTime_event_hist(0) / (8.*30.) ; Express as mean monthly totals
+      precip_event_hist@lat2d = lat
+      precip_event_hist@lon2d = lon
+      precip_event_hist@units = " "
+      ;
+      precip_nonevent_hist  = precip_nonevent_hist*(nTime_hist(0) - nTime_event_hist(0)) / (8.*30.) ; Express as mean monthly totals
+      precip_nonevent_hist@lat2d = lat
+      precip_nonevent_hist@lon2d = lon
+      precip_nonevent_hist@units = " "
+      ;
+      precip_total_future = precip_total_future*nTime_future(0) / (8.*30.) ; Express as mean monthly totals
+      precip_total_future@lat2d = lat
+      precip_total_future@lon2d = lon
+      precip_total_future@units = " "
+      ;
+      precip_event_future = precip_event_future*nTime_event_future(0) / (8.*30.) ; Express as mean monthly totals
+      precip_event_future@lat2d = lat
+      precip_event_future@lon2d = lon
+      precip_event_future@units = " "
+      ;
+      precip_nonevent_future  = precip_nonevent_future*(nTime_future(0) - nTime_event_future(0)) / (8.*30.) ; Express as mean monthly totals
+      precip_nonevent_future@lat2d = lat
+      precip_nonevent_future@lon2d = lon
+      precip_nonevent_future@units = " "
    end if
    if (doIVT .eq. 1) then
       ivt_total_hist       = fileID->total_ivt_hist(5::,5::)
@@ -139,6 +178,53 @@ do ij=1,nmods-1
       ivt_total_future     = fileID->total_ivt_future(5::,5::)
       ivt_event_future     = fileID->event_ivt_future(5::,5::)
       ivt_nonevent_future  = fileID->nevent_ivt_future(5::,5::)
+   end if
+   if (doZ500 .eq. 1) then
+      z500_total_hist       = fileID->total_z500_hist(5::,5::)
+      z500_event_hist       = fileID->event_z500_hist(5::,5::)
+      z500_nonevent_hist    = fileID->nevent_z500_hist(5::,5::)
+      z500_total_future     = fileID->total_z500_future(5::,5::)
+      z500_event_future     = fileID->event_z500_future(5::,5::)
+      z500_nonevent_future  = fileID->nevent_z500_future(5::,5::)
+   end if
+   if (doSWE .eq. 1) then
+      swe_total_hist       = fileID->total_swe_hist(5::,5::)
+      swe_event_hist       = fileID->event_swe_hist(5::,5::)
+      swe_nonevent_hist    = fileID->nevent_swe_hist(5::,5::)
+      swe_total_future     = fileID->total_swe_future(5::,5::)
+      swe_event_future     = fileID->event_swe_future(5::,5::)
+      swe_nonevent_future  = fileID->nevent_swe_future(5::,5::)
+
+      ; Express in cm
+      swe_total_hist  = swe_total_hist/10. ; Express in cm.	
+      swe_total_hist@lat2d = lat
+      swe_total_hist@lon2d = lon
+      swe_total_hist@units = " "
+      ;
+      swe_event_hist  = swe_event_hist/10. ; Express in cm.
+      swe_event_hist@lat2d = lat
+      swe_event_hist@lon2d = lon
+      swe_event_hist@units = " "
+      ;
+      swe_total_future = swe_total_future/10. ; Express in cm.
+      swe_total_future@lat2d = lat
+      swe_total_future@lon2d = lon
+      swe_total_future@units = " "
+      ;
+      swe_event_future = swe_event_future/10. ; Express in cm.
+      swe_event_future@lat2d = lat
+      swe_event_future@lon2d = lon
+      swe_event_future@units = " "
+      ;
+      swe_nonevent_hist       = swe_nonevent_hist/10. ; Express in cm.
+      swe_nonevent_hist@lat2d = lat
+      swe_nonevent_hist@lon2d = lon
+      swe_nonevent_hist@units = " "
+      ;
+      swe_nonevent_future       = swe_nonevent_future/10. ; Express in cm.
+      swe_nonevent_future@lat2d = lat
+      swe_nonevent_future@lon2d = lon
+      swe_nonevent_future@units = " "
    end if
 
    ; ##########################################
@@ -166,7 +252,6 @@ do ij=1,nmods-1
        dprecip_noevent@lat2d = lat
        dprecip_noevent@lon2d = lon
        dprecip_noevent@units = " "
-
        ;
        dVar_total   = dprecip_total
        dVar_event   = dprecip_event
@@ -195,11 +280,66 @@ do ij=1,nmods-1
        divt_noevent@lat2d = lat
        divt_noevent@lon2d = lon
        divt_noevent@units = " "
-
        ;
        dVar_total   = divt_total
        dVar_event   = divt_event
        dVar_noevent = divt_noevent
+   end if
+   ;
+   if (doZ500 .eq. 1) then
+      dz500_total   = z500_total_future    - z500_total_hist
+      dz500_event   = z500_event_future    - z500_event_hist
+      dz500_noevent = z500_nonevent_future - z500_nonevent_hist
+      if (ij .eq. 0) then
+      	 dz500_total   = 0
+      	 dz500_event   = 0
+      	 dz500_noevent = 0
+       end if
+   
+       ; Add attributes
+       dz500_total@lat2d = lat
+       dz500_total@lon2d = lon
+       dz500_total@units = " "
+       ;
+       dz500_event@lat2d = lat
+       dz500_event@lon2d = lon
+       dz500_event@units = " "
+       ;
+       dz500_noevent@lat2d = lat
+       dz500_noevent@lon2d = lon
+       dz500_noevent@units = " "
+       ;
+       dVar_total   = dz500_total
+       dVar_event   = dz500_event
+       dVar_noevent = dz500_noevent
+   end if
+   ;
+   if (doSWE .eq. 1) then
+      dswe_total   = swe_total_future    - swe_total_hist
+      dswe_event   = swe_event_future    - swe_event_hist
+      dswe_noevent = swe_nonevent_future - swe_nonevent_hist
+      if (ij .eq. 0) then
+      	 dswe_total   = 0
+      	 dswe_event   = 0
+      	 dswe_noevent = 0
+       end if
+   
+       ; Add attributes
+       dswe_total@lat2d = lat
+       dswe_total@lon2d = lon
+       dswe_total@units = " "
+       ;
+       dswe_event@lat2d = lat
+       dswe_event@lon2d = lon
+       dswe_event@units = " "
+       ;
+       dswe_noevent@lat2d = lat
+       dswe_noevent@lon2d = lon
+       dswe_noevent@units = " "
+       ;
+       dVar_total   = dswe_total
+       dVar_event   = dswe_event
+       dVar_noevent = dswe_noevent
    end if
 
    ; ##########################################
@@ -232,13 +372,19 @@ res_L                   = True
 res_L@gsnFrame          = False
 res_L@gsnPanelLabelBar  = True
 if (doPrecip .eq. 1) then
-   res_L@lbTitleString     = "Precipitation (mm/day)"
+   res_L@lbTitleString     = "Precipitation (mm/month)"
 end if
 if (doIVT .eq. 1) then
    res_L@lbTitleString     = "IVT (kg/m/s)"
 end if
+if (doZ500 .eq. 1) then
+   res_L@lbTitleString     = "Geopotential height @ 500hPa (m)"
+end if
+if (doSWE .eq. 1) then
+   res_L@lbTitleString     = "Snow Water Equivalent (cm)"
+end if
 res_L@lbTitleFontHeightF= .01
-res_L@pmLabelBarOrthogonalPosF = -0.015              ; move whole thing down a tad
+res_L@pmLabelBarOrthogonalPosF = -0.0075              ; move whole thing down a tad
 
 ; Panel upper and lower
 gsn_panel(wks,plot,(/3,nmods/),res_L)
